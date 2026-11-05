@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# runtime caches & temp
+.cache/
+.tmp/
+
+# WorkBuddy workspace data (NOT project code)
+.workbuddy/
+
+# OS junk
+Thumbs.db
+.DS_Store

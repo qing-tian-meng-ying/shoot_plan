@@ -1,0 +1,13 @@
+{
+  "name": "shoot-plan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "拍摄策划 · Shoot Plan — 分镜编排与 AI 自动策划",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
