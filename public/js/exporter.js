@@ -12,6 +12,7 @@ const IH = Math.round(CW * 1.25);
 
 const SERIF = '"Songti SC","STSong","Noto Serif SC","SimSun",serif';
 const SANS = '"PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif';
+const SCALE = 1.8; // 全局字号缩放：1 = 原始大小（字体/行高/文字间距一起等比缩放）
 const INK = '#1b1916';
 const INK2 = '#453f37';
 const MUTED = '#8b8174';
@@ -20,8 +21,8 @@ const ACCENT = '#a34e33';
 const PAPER = '#f4f1ea';
 
 const F = {
-  serif: (size, weight = 600) => `${weight} ${size}px ${SERIF}`,
-  sans: (size, weight = 400) => `${weight} ${size}px ${SANS}`,
+  serif: (size, weight = 600) => `${weight} ${Math.round(size * SCALE)}px ${SERIF}`,
+  sans: (size, weight = 400) => `${weight} ${Math.round(size * SCALE)}px ${SANS}`,
 };
 
 function wrapText(ctx, text, maxW) {
@@ -115,10 +116,11 @@ export async function exportLongImage() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const frames = [];
-    let y = 64;
+    let y = 64 * SCALE;
 
     const text = (lines, opt) => {
       if (!lines || !lines.length) return;
+      const lh = (opt.lh || 20) * SCALE;
       frames.push({
         type: 'text',
         lines,
@@ -126,11 +128,11 @@ export async function exportLongImage() {
         y,
         font: opt.font,
         color: opt.color || INK,
-        lh: opt.lh || 20,
+        lh,
         align: opt.align || 'left',
-        spacing: opt.spacing || 0,
+        spacing: (opt.spacing || 0) * SCALE,
       });
-      y += lines.length * (opt.lh || 20) + (opt.after || 0);
+      y += lines.length * lh + (opt.after || 0) * SCALE;
     };
 
     const measure = (str, font, maxW, spacing = 0) => {
@@ -149,13 +151,13 @@ export async function exportLongImage() {
     text(themeLines, { font: F.serif(52), color: INK, lh: 64, after: 18 });
 
     if (plan.concept) {
-      const cLines = measure(plan.concept, F.sans(15), 900);
+      const cLines = measure(plan.concept, F.sans(15), 900 * SCALE);
       text(cLines, { font: F.sans(15), color: INK2, lh: 30, after: 22 });
     }
 
-    y += 14;
+    y += 14 * SCALE;
     frames.push({ type: 'line', x1: PAD, y1: y, x2: W - PAD, y2: y, color: LINE });
-    y += 26;
+    y += 26 * SCALE;
 
     const meta = [
       ['服装期望', (plan.costume || []).join(' · ')],
@@ -167,15 +169,15 @@ export async function exportLongImage() {
 
     for (const [label, value] of meta) {
       ctx.font = F.sans(14);
-      const vLines = wrapText(ctx, value, W - PAD * 2 - 116);
-      frames.push({ type: 'text', lines: [label], x: PAD, y: y + 3, font: F.sans(10.5, 500), color: MUTED, lh: 20, spacing: 1 });
-      frames.push({ type: 'text', lines: vLines, x: PAD + 116, y, font: F.sans(14), color: INK, lh: 24 });
-      y += Math.max(24, vLines.length * 24) + 12;
+      const vLines = wrapText(ctx, value, W - PAD * 2 - 116 * SCALE);
+      frames.push({ type: 'text', lines: [label], x: PAD, y: y + 3 * SCALE, font: F.sans(10.5, 500), color: MUTED, lh: 20 * SCALE, spacing: 1 * SCALE });
+      frames.push({ type: 'text', lines: vLines, x: PAD + 116 * SCALE, y, font: F.sans(14), color: INK, lh: 24 * SCALE });
+      y += (Math.max(24, vLines.length * 24) + 12) * SCALE;
     }
 
-    y += 10;
+    y += 10 * SCALE;
     frames.push({ type: 'line', x1: PAD, y1: y, x2: W - PAD, y2: y, color: LINE });
-    y += 34;
+    y += 34 * SCALE;
 
     /* ---------------- 分镜 ---------------- */
     for (const sec of secs) {
@@ -183,7 +185,7 @@ export async function exportLongImage() {
         let x = PAD;
         const parts = [
           { t: sec.label, f: F.serif(22), c: INK, dy: 0, sp: 0 },
-          { t: (sec.en || '').toUpperCase(), f: F.sans(9.5, 500), c: MUTED, dy: 9, sp: 2 },
+          { t: (sec.en || '').toUpperCase(), f: F.sans(9.5, 500), c: MUTED, dy: 9 * SCALE, sp: 2 * SCALE },
         ];
         for (const p of parts) {
           if (!p.t) continue;
@@ -191,56 +193,56 @@ export async function exportLongImage() {
           if ('letterSpacing' in ctx) ctx.letterSpacing = p.sp + 'px';
           const w = ctx.measureText(p.t).width;
           if ('letterSpacing' in ctx) ctx.letterSpacing = '0px';
-          frames.push({ type: 'text', lines: [p.t], x, y: y + p.dy, font: p.f, color: p.c, lh: 26, spacing: p.sp });
-          x += w + 12;
+          frames.push({ type: 'text', lines: [p.t], x, y: y + p.dy, font: p.f, color: p.c, lh: 26 * SCALE, spacing: p.sp });
+          x += w + 12 * SCALE;
         }
-        frames.push({ type: 'line', x1: x + 4, y1: y + 14, x2: W - PAD - 44, y2: y + 14, color: LINE });
-        frames.push({ type: 'text', lines: [String(sec.items.length)], x: W - PAD, y: y + 2, font: F.serif(13), color: MUTED, lh: 20, align: 'right' });
-        y += 32;
+        frames.push({ type: 'line', x1: x + 4, y1: y + 14 * SCALE, x2: W - PAD - 44, y2: y + 14 * SCALE, color: LINE });
+        frames.push({ type: 'text', lines: [String(sec.items.length)], x: W - PAD, y: y + 2 * SCALE, font: F.serif(13), color: MUTED, lh: 20 * SCALE, align: 'right' });
+        y += 32 * SCALE;
       }
 
       for (let i = 0; i < sec.items.length; i += COLS) {
         const row = sec.items.slice(i, i + COLS);
         const metas = row.map((s) => {
-          const title = ellipsis(measure(s.title || '', F.serif(15), CW - 30), 1);
+          const title = ellipsis(measure(s.title || '', F.serif(15), CW - 30 * SCALE), 1);
           const exprText = (s.expression || '').trim();
           const actText = (s.action || '').trim();
-          const expr = exprText && !/^[—\-－]+$/.test(exprText) ? ellipsis(measure(exprText, F.sans(12.5), CW - 40), 2) : [];
-          const act = actText && !/^[—\-－]+$/.test(actText) ? ellipsis(measure(actText, F.sans(12.5), CW - 40), 2) : [];
+          const expr = exprText && !/^[—\-－]+$/.test(exprText) ? ellipsis(measure(exprText, F.sans(12.5), CW - 40 * SCALE), 2) : [];
+          const act = actText && !/^[—\-－]+$/.test(actText) ? ellipsis(measure(actText, F.sans(12.5), CW - 40 * SCALE), 2) : [];
           const tagStr = shotTags(s).map((t) => `${t.k} ${t.v}`).join('  ·  ');
           const tags = tagStr ? ellipsis(measure(tagStr, F.sans(10), CW), 2) : [];
-          const h = 24 + expr.length * 19 + act.length * 19 + (tags.length ? 8 + tags.length * 15 : 0) + 4;
+          const h = (24 + expr.length * 19 + act.length * 19 + (tags.length ? 8 + tags.length * 15 : 0) + 4) * SCALE;
           return { title, expr, act, tags, h };
         });
 
-        const rowH = IH + Math.max(...metas.map((m) => m.h)) + 40;
+        const rowH = IH + Math.max(...metas.map((m) => m.h)) + 40 * SCALE;
 
         row.forEach((s, j) => {
           const x = PAD + j * (CW + GAP);
           const img = imgs.get(s.id);
           frames.push({ type: 'img', img, x, y, w: CW, h: IH });
 
-          let cy = y + IH + 12;
+          let cy = y + IH + 12 * SCALE;
           const idx = state.plan.shots.findIndex((z) => z.id === s.id) + 1;
-          frames.push({ type: 'text', lines: [pad2(idx)], x, y: cy + 2, font: F.serif(11), color: ACCENT, lh: 18 });
+          frames.push({ type: 'text', lines: [pad2(idx)], x, y: cy + 2 * SCALE, font: F.serif(11), color: ACCENT, lh: 18 * SCALE });
           if (metas[j].title.length) {
-            frames.push({ type: 'text', lines: metas[j].title, x: x + 30, y: cy, font: F.serif(15), color: INK, lh: 22 });
+            frames.push({ type: 'text', lines: metas[j].title, x: x + 30 * SCALE, y: cy, font: F.serif(15), color: INK, lh: 22 * SCALE });
           }
-          cy += 24;
+          cy += 24 * SCALE;
 
           if (metas[j].expr.length) {
-            frames.push({ type: 'text', lines: ['神态'], x, y: cy + 2, font: F.sans(10), color: MUTED, lh: 17 });
-            frames.push({ type: 'text', lines: metas[j].expr, x: x + 36, y: cy, font: F.sans(12.5), color: INK2, lh: 19 });
-            cy += metas[j].expr.length * 19;
+            frames.push({ type: 'text', lines: ['神态'], x, y: cy + 2 * SCALE, font: F.sans(10), color: MUTED, lh: 17 * SCALE });
+            frames.push({ type: 'text', lines: metas[j].expr, x: x + 36 * SCALE, y: cy, font: F.sans(12.5), color: INK2, lh: 19 * SCALE });
+            cy += metas[j].expr.length * 19 * SCALE;
           }
           if (metas[j].act.length) {
-            frames.push({ type: 'text', lines: ['动作'], x, y: cy + 2, font: F.sans(10), color: MUTED, lh: 17 });
-            frames.push({ type: 'text', lines: metas[j].act, x: x + 36, y: cy, font: F.sans(12.5), color: INK2, lh: 19 });
-            cy += metas[j].act.length * 19;
+            frames.push({ type: 'text', lines: ['动作'], x, y: cy + 2 * SCALE, font: F.sans(10), color: MUTED, lh: 17 * SCALE });
+            frames.push({ type: 'text', lines: metas[j].act, x: x + 36 * SCALE, y: cy, font: F.sans(12.5), color: INK2, lh: 19 * SCALE });
+            cy += metas[j].act.length * 19 * SCALE;
           }
           if (metas[j].tags.length) {
-            cy += 8;
-            frames.push({ type: 'text', lines: metas[j].tags, x, y: cy, font: F.sans(10), color: MUTED, lh: 15 });
+            cy += 8 * SCALE;
+            frames.push({ type: 'text', lines: metas[j].tags, x, y: cy, font: F.sans(10), color: MUTED, lh: 15 * SCALE });
           }
         });
 
@@ -249,12 +251,12 @@ export async function exportLongImage() {
     }
 
     /* ---------------- 页脚 ---------------- */
-    y += 10;
+    y += 10 * SCALE;
     frames.push({ type: 'line', x1: PAD, y1: y, x2: W - PAD, y2: y, color: LINE });
-    y += 16;
-    frames.push({ type: 'text', lines: ['拍摄策划 · ' + (plan.theme || '未命名')], x: PAD, y, font: F.sans(10, 500), color: MUTED, lh: 16, spacing: 1 });
-    frames.push({ type: 'text', lines: [`${fmtDate()} · ${shots.length} FRAMES`], x: W - PAD, y, font: F.sans(10, 500), color: MUTED, lh: 16, spacing: 1, align: 'right' });
-    y += 46;
+    y += 16 * SCALE;
+    frames.push({ type: 'text', lines: ['拍摄策划 · ' + (plan.theme || '未命名')], x: PAD, y, font: F.sans(10, 500), color: MUTED, lh: 16 * SCALE, spacing: 1 * SCALE });
+    frames.push({ type: 'text', lines: [`${fmtDate()} · ${shots.length} FRAMES`], x: W - PAD, y, font: F.sans(10, 500), color: MUTED, lh: 16 * SCALE, spacing: 1 * SCALE, align: 'right' });
+    y += 46 * SCALE;
 
     /* ---------------- 绘制 ---------------- */
     const totalH = Math.ceil(y);
@@ -287,7 +289,7 @@ export async function exportLongImage() {
           c.fillStyle = '#a99e8e';
           c.font = F.sans(12);
           c.textAlign = 'center';
-          c.fillText('图片未能加载', f.x + f.w / 2, f.y + f.h / 2 - 8);
+          c.fillText('图片未能加载', f.x + f.w / 2, f.y + f.h / 2 - 8 * SCALE);
           c.textAlign = 'left';
         }
         c.strokeStyle = 'rgba(27,25,22,.1)';
